@@ -2,12 +2,16 @@
 #' @title Compute optimal k
 #' @description Compute optimal k.
 #'
-#' @param QA double. Defines the performance of a surgeon with the odds ratio ratio of death Q.
-#' @param coeff NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' @param QA Double. Defines the performance of a surgeon with the odds ratio ratio of death
+#' \code{Q}.
+#' @param df Data Frame. First column Parsonnet Score and second column outcome of each operation.
+#' @param coeff Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 #'  from the binary logistic regression model. For more information see details.
-#' @param parsonnetscores NumericVector. Vector of Parsonnet Scores.
+#' @param yemp Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+#' binary logistc regression model.
 #'
-#' @return Returns a single value which is the approximate optimal k for a set of given Parsonnet scores.
+#' @return Returns a single value which is the approximate optimal \code{k} for a set of given
+#' Parsonnet scores.
 #'
 #' @details Formula deterioration:  \deqn{ k{det} = \frac{Q{A} - 1 - log(Q{A})}{log(Q{A})}\bar{p} , Q{A} > 1    }
 #'          Formula improvement:    \deqn{ k{imp} = \frac{1 - Q{A} + log(Q{A})}{log(Q{A})}\bar{p} , Q{A} < 1    }
@@ -16,22 +20,24 @@
 #'
 #' @author Philipp Wittenberg
 #' @export
-optimal_k <- function(QA, parsonnetscores, coeff) {
+optimal_k <- function(QA, df, coeff, yemp = TRUE) {
   if (is.null(QA) || is.na(QA) || QA <= 0) {stop("QA must a positive numeric value")}
   QA <- as.numeric(QA)
-  if (is.null(parsonnetscores) || is.na(parsonnetscores) || is.vector(parsonnetscores) != "TRUE") {stop("Argument 'parsonnetscore' must be an integer value")}
-  parsonnetscores <- as.vector(parsonnetscores)
+  #if (is.null(parsonnetscores) || is.na(parsonnetscores) || is.vector(parsonnetscores) != "TRUE") {stop("Argument 'parsonnetscore' must be an integer value")}
+  #parsonnetscores <- as.vector(parsonnetscores)
   if (is.null(coeff) || is.na(coeff)  || length(coeff)  != 2) {stop("Model coefficients 'coeff' must be a numeric vector with two elements")}
   coeff <- as.vector(coeff)
-  .optimal_k(QA, parsonnetscores, coeff)
+  if (is.na(yemp) || is.logical(yemp) != "TRUE") {warning("Argument 'yemp' must be logical using TRUE as default value")}
+  yemp <- as.logical(yemp)
+  .optimal_k(QA, df, coeff, yemp)
 }
 
 #' @name gettherisk
 #' @title Compute Risk of death
 #' @description Compute Risk of death.
 #'
-#' @param parsonnetscore int. Parsonnet Score.
-#' @param coeff NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' @param parsonnetscore Integer. Parsonnet Score.
+#' @param coeff Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 #'  from the binary logistic regression model.
 #'
 #' @return Returns a single value which is the expected risk based on a risk model.
@@ -53,18 +59,17 @@ gettherisk <- function(parsonnetscore, coeff) {
 #' @title Compute Expected minus Observed value
 #' @description Compute Expected minus Observed value.
 #'
-#' @param df DataFrame. First column Parsonnet Score and second column outcome of each operation.
-#' @param coeff NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' @param df Data Frame. First column Parsonnet Score and second column outcome of each operation.
+#' @param coeff Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 #'  from the binary logistic regression model.
-#' @param yemp boolean. If TRUE use observed outcome value, if FALSE use estimated binary logistc
-#'  regression model.
+#' @param yemp Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+#' binary logistc regression model.
 #'
-#' @return Returns a single value which is the difference between expected risk and observed outcome.
+#' @return Returns a single value which is the difference between expected risk and observed
+#' outcome.
 #'
 #' @template calceo
 #'
-#' @keywords keyword1 keyword2
-#' @family VLAD functions
 #' @author Philipp Wittenberg
 #' @export
 calceo <- function(df, coeff, yemp = TRUE) {
@@ -84,12 +89,13 @@ calceo <- function(df, coeff, yemp = TRUE) {
 #' @title Compute ARLs of EO-CUSUM control charts using simulation
 #' @description Compute ARLs of EO-CUSUM control charts using simulation.
 #'
-#' @param r int. Number of of simulation runs.
-#' @param k double. Reference value of the CUSUM control chart.
-#' @param h double. Decision interval (alarm limit, threshold) of the CUSUM control chart.
+#' @param r Integer. Number of of simulation runs.
+#' @param k Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
+#' value. Can be determined with function \code{\link{optimal_k}}.
+#' @param h Double. Decision interval (alarm limit, threshold) of the CUSUM control chart.
 #' @inheritParams calceo
-#' @param side character. Default is "low" to calculate ARL for the upper arm of the V-mask. If side = "up",
-#'  calculate the lower arm of the V-mask.
+#' @param side Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
+#'  If side = \code{"up"}, calculate the lower arm of the V-mask.
 #'
 #' @return Returns a single value which is the Run Length.
 #'
@@ -115,7 +121,7 @@ eocusum_arl_sim <- function(r, k, h, df, coeff, yemp = TRUE, side = "low") {
   yemp <- as.logical(yemp)
   iside <- switch(as.character(side), low = 1, up = 2)
   if (is.null(iside)) {
-    warning("No valid input, u sing side='low' (deterioration) as default")
+    warning("No valid input, using side='low' (deterioration) as default")
     iside <- 1
   }
   .eocusum_arl_sim(r, k, h, df, coeff, yemp, iside)
@@ -126,9 +132,10 @@ eocusum_arl_sim <- function(r, k, h, df, coeff, yemp = TRUE, side = "low") {
 #' @description Compute Out of Control ARLs of EO-CUSUM control charts using simulation.
 #'
 #' @inheritParams eocusum_arl_sim
-#' @param coeff2 NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' @param coeff2 Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 #'  from the binary logistic regression model of a resampled dataset.
-#' @param QS double. Defines the performance of a surgeon with the odds ratio ratio of death Q.
+#' @param QS Double. Defines the performance of a surgeon with the odds ratio ratio of death
+#' \code{Q}.
 #'
 #' @return Returns a single value which is the Run Length.
 #'
@@ -154,11 +161,11 @@ eocusum_arloc_sim <- function(r, k, h, df, coeff, coeff2, QS = 1, side = "low") 
   coeff2 <- as.vector(coeff2)
   iside <- switch(as.character(side), low = 1, up = 2)
   if (is.null(iside)) {
-    warning("No valid input, u sing side='low' (deterioration) as default")
+    warning("No valid input, using side='low' (deterioration) as default")
     iside <- 1
   }
   QS <- as.numeric(QS)
-  if (is.na(QS) || QS < 0) {stop("QS must a positive numeric value")}
+  if (is.na(QS) || QS <= 0) {stop("QS must a positive numeric value")}
   else if (QS < 1 && iside == 1) {stop("For detecting deterioration (side='low') QS must a positive numeric value >= 1")}
   else if (QS > 1 && iside == 2) {stop("For detecting improvement (side='up') QS must a positive numeric value <= 1")}
   .eocusum_arloc_sim(r, k, h, df, coeff, coeff2, QS, iside)
@@ -170,16 +177,42 @@ eocusum_arloc_sim <- function(r, k, h, df, coeff, coeff2, QS = 1, side = "low") 
 #'
 #' @inheritParams eocusum_arloc_sim
 #' @param m Integer. Simulated in-control observations.
-#' @param type character. Default argument is "cond" for computation of conditional steady-state.
-#' Other option is the cyclical steady-state "cycl".
+#' @param type Character. Default argument is \code{"cond"} for computation of conditional
+#' steady-state. Other option is the cyclical steady-state \code{"cycl"}.
 #'
 #' @return Returns a single value which is the Run Length.
 #'
-#' @template eocusum_adoc_sim
+#' @author Philipp Wittenberg
+#'
+#' @export
+#' @examples
+#'\donttest{
+#'
+#'# This function is deprecated. See eocusum_ad_sim() instead.
+#'
+#'  }
+eocusum_adoc_sim <- function(r, k, h, df, coeff, coeff2, QS = 1, side = "low", type = "cond", m = 50) {
+
+  .Deprecated("eocusum_adoc_sim")
+  eocusum_ad_sim(r = r, k = k, h = h, df = df, coeff = coeff, coeff2 = coeff2, QS = QS, side = side, type = type, m = m)
+}
+
+#' @name eocusum_ad_sim
+#' @title Compute steady-state ARLs of EO-CUSUM control charts using simulation
+#' @description Compute steady-state ARLs of EO-CUSUM control charts using simulation.
+#'
+#' @inheritParams eocusum_arloc_sim
+#' @param m Integer. Simulated in-control observations.
+#' @param type Character. Default argument is \code{"cond"} for computation of conditional
+#' steady-state. Other option is the cyclical steady-state \code{"cycl"}.
+#'
+#' @return Returns a single value which is the Run Length.
+#'
+#' @template eocusum_ad_sim
 #'
 #' @author Philipp Wittenberg
 #' @export
-eocusum_adoc_sim <- function(r, k, h, df, coeff, coeff2, QS = 1, side = "low", type = "cond", m = 50) {
+eocusum_ad_sim <- function(r, k, h, df, coeff, coeff2, QS = 1, side = "low", type = "cond", m = 50) {
   r <- as.integer(r)
   if (is.na(r) || r <= 0) {stop("Number of simulation runs 'r' must be a positive integer")}
   k <- as.numeric(k)
@@ -201,17 +234,17 @@ eocusum_adoc_sim <- function(r, k, h, df, coeff, coeff2, QS = 1, side = "low", t
     iside <- 1
   }
   QS <- as.numeric(QS)
-  if (is.na(QS) || QS < 0) {stop("QS must a positive numeric value")}
+  if (is.na(QS) || QS <= 0) {stop("QS must a positive numeric value")}
   else if (QS < 1 && iside == 1) {stop("For detecting deterioration (side='low') QS must a positive numeric value >= 1")}
   else if (QS > 1 && iside == 2) {stop("For detecting improvement (side='up') QS must a positive numeric value <= 1")}
   itype <- switch(type, cond = 1, cycl = 2)
   if (is.null(itype)) {
-    warning("No valid input, using type=cond (conditional steady-state) as default")
+    warning("No valid input, using type='cond' (conditional steady-state) as default")
     itype <- 1
   }
   m <- as.integer(m)
   if (is.na(m) || m < 0) {stop("m must be a positive integer")}
-  .eocusum_adoc_sim(r, k, h, df, coeff, coeff2, QS, iside, itype, m)
+  .eocusum_ad_sim(r, k, h, df, coeff, coeff2, QS, iside, itype, m)
 }
 
 #' @name eocusum_arloc_h_sim
@@ -219,32 +252,37 @@ eocusum_adoc_sim <- function(r, k, h, df, coeff, coeff2, QS = 1, side = "low", t
 #' @description Compute alarm threshold (Out of Control ARL) of EO-CUSUM control charts using
 #'  simulation.
 
-#' @param L0 double. Prespecified in-control Average Run Length.
-#' @param df DataFrame. First column are Parsonnet Score values within a range of zero to 100 representing
-#' the preoperative patient risk. The second column are binary (0/1) outcome values of each operation.
-#' @param k double. Reference value of the CUSUM control chart.
-#' @param m integer. Number of simulation runs.
-#' @param QS double. Defines the performance of a surgeon with the odds ratio ratio of death Q.
-#' @param side character. Default is "low" to calculate ARL for the upper arm of the V-mask. If side = "up",
-#'  calculate the lower arm of the V-mask.
-#' @param coeff NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' @param L0 Double. Prespecified in-control Average Run Length.
+#' @param df Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+#' \code{100} representing the preoperative patient risk. The second column are binary (\code{0/1})
+#'  outcome values of each operation.
+#' @param k Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
+#' value. Can be determined with function \code{\link{optimal_k}}.
+#' @param m Integer. Number of simulation runs.
+#' @param QS Double. Defines the performance of a surgeon with the odds ratio ratio of death
+#' \code{Q}.
+#' @param side Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
+#'  If side = \code{"up"}, calculate the lower arm of the V-mask.
+#' @param coeff Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 #'  from the binary logistic regression model.
-#' @param coeff2 NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' @param coeff2 Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 #'  from the binary logistic regression model of a resampled dataset.
-#' @param nc integer. Number of cores.
-#' @param verbose boolean. If TRUE verbose output is included, if FALSE a quiet calculation of h is done.
+#' @param nc Integer. Number of cores.
+#' @param jmax Integer. Number of digits for grid search.
+#' @param verbose Logical. If \code{TRUE} verbose output is included, if \code{FALSE} a quiet
+#' calculation of \code{h} is done.
 #'
-#' @return Returns a single value which is the control limit h for a given ARL.
+#' @return Returns a single value which is the control limit \code{h} for a given ARL.
 #'
-#' @details The function \code{eocusum_arloc_h_sim} determines the control limit for given in-control ARL (L0) by applying a
-#' multi-stage search procedure which includes secant rule and the parallel version of \code{\link{eocusum_arloc_sim}}
-#' using \code{\link{mclapply}}.
+#' @details The function \code{eocusum_arloc_h_sim} determines the control limit for given
+#' in-control ARL (\code{L0}) by applying a multi-stage search procedure which includes secant rule
+#'  and the parallel version of \code{\link{eocusum_arloc_sim}} using \code{\link{mclapply}}.
 #'
 #' @template eocusum_arloc_h_sim
 #'
 #' @author Philipp Wittenberg
 #' @export
-eocusum_arloc_h_sim <- function(L0, k, df, coeff, coeff2, m = 100, QS = 1, side = "low", nc = 1, verbose = FALSE) {
+eocusum_arloc_h_sim <- function(L0, k, df, coeff, coeff2, m = 100, QS = 1, side = "low", nc = 1, jmax = 4, verbose = FALSE) {
   L0 <- as.integer(L0)
   if (is.na(L0) || L0 <= 0) {stop("Given in-control ARL 'L0' must be a positive integer")}
   k <- as.numeric(k)
@@ -258,83 +296,33 @@ eocusum_arloc_h_sim <- function(L0, k, df, coeff, coeff2, m = 100, QS = 1, side 
   coeff <- as.vector(coeff)
   if (is.null(coeff2) || is.na(coeff2) || length(coeff2) != 2) {stop("Model coefficients 'coeff2' must be a numeric vector with two elements")}
   coeff2 <- as.vector(coeff2)
-  side <- switch(as.character(side), low = 1, up = 2)
   if (is.null(side)) {
-    warning("no valid input, using side=low (deterioration) as default")
-    side <- 1
+    warning("No valid input, using side='low' (deterioration) as default")
+    side <- c("low")
   }
   QS <- as.numeric(QS)
-  if (is.na(QS) || QS < 0) {stop("QS must a positive numeric value")}
+  if (is.na(QS) || QS <= 0) {stop("QS must a positive numeric value")}
   else if (QS < 1 && side == 1) {stop("For detecting deterioration (side='low') QS must a positive numeric value >= 1")}
   else if (QS > 1 && side == 2) {stop("For detecting improvement (side='up') QS must a positive numeric value <= 1")}
-  h2 <- 1
-  L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h2, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-  if ( verbose ) cat(paste("(i)\t", h2, "\t", L2, "\n"))
-  LL <- NULL
-  while ( L2 < L0 & h2 < 6 ) {
-    L1 <- L2
-    h2 <- h2 + 1
-    L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h2, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-    if ( verbose ) cat(paste("(ii)\t", h2, "\t", L2, "\n"))
-    LL <- c(LL, L2)
+  for ( h in 1:10 ) {
+    L1 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
+    if ( verbose ) cat(paste("h =", h, "\tARL =", L1, "\n"))
+    if ( L1 > L0 ) break
   }
-  if ( L2 < L0 ) {
-    x  <- 1:5
-    LM <- stats::lm(LL ~ I(x) + I(x^2) )
-    beta <- stats::coef(LM)
-    p <- beta[2] / beta[3]
-    q <- (beta[1] - L0)/beta[3]
-    h2 <- -p / 2 + 1*sqrt(p^2 / 4 - q)
-    L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h2, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-    if ( verbose ) cat(paste("(iii)\t", h2, "\t", L2, "\n"))
-    if ( L2 < L0 ) {
-      while ( L2 < L0 ) {
-        L1 <- L2
-        h2 <- h2 + 1
-        L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h2, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-        if ( verbose ) cat(paste("(iv)a\t", h2, "\t", L2, "\n"))
-        }
-      h1 <- h2 - 1
-    } else {
-      while ( L2 >= L0 ) {
-        L1 <- L2
-        h2 <- h2 - 1
-        L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h2, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-        if ( verbose ) cat(paste("(iv)b\t", h2, "\t", L2, "\n"))
-      }
-      h1 <- h2 + 1
+  h1 <- h
+
+  for ( j in 1:jmax ) {
+    for ( dh in 1:19 ) {
+      h <- h1 + (-1)^j*dh/10^j
+      L1 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
+      if ( verbose ) cat(paste("h =", h, "\tARL =", L1, "\n"))
+      if ( (j %% 2 == 1 & L1 < L0) | (j %% 2 == 0 & L1 > L0) ) break
     }
-    } else {
-    h1 <- h2 - 1
+    h1 <- h
   }
-  h.error <- 1
-  a.error <- 1
-  scaling <- 10^3
-  while ( a.error > 1e-4 & h.error > 1e-6 ) {
-    h3 <- h1 + (L0 - L1) / (L2 - L1) * (h2 - h1)
-    L3 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h3, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-    if ( verbose ) cat(paste("(v)\t", h3, "\t", L3, "\n"))
-    h1 <- h2
-    h2 <- h3
-    L1 <- L2
-    L2 <- L3
-    a.error <- min( c(abs(L2 - L0), abs(L2 - L1) ) )
-    h.error <- abs(h2 - h1)
-    if ( h.error < 0.5 / scaling ) {
-      if ( L3 < L0 ) {
-        h3 <- ( round( h3 * scaling ) + 1 ) / scaling - 1e-6
-        L3 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h3, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-        if ( verbose ) cat(paste("(vi)\t", h3, "\t", L3, "\n"))
-      }
-      break
-    }
-  }
-  if ( L3 < L0 ) {
-    h3 <- ( round( h3 * scaling ) + 1 ) / scaling - 1e-6
-    L3 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arloc_sim, h = h3, k = k, df = df, QS = QS, side = side, coeff = coeff, coeff2 = coeff2, mc.cores = nc)))
-    if ( verbose ) cat(paste("(vii)\t", h3, "\t", L3, "\n"))
-  }
-  h <- h3
+
+  if ( L1 < L0 ) h <- h + 1/10^jmax
+
   h
 }
 
@@ -342,30 +330,78 @@ eocusum_arloc_h_sim <- function(L0, k, df, coeff, coeff2, m = 100, QS = 1, side 
 #' @title Compute alarm threshold of EO-CUSUM control charts using simulation
 #' @description Compute alarm threshold of EO-CUSUM control charts using simulation.
 #'
-#' @param L0 double. Prespecified in-control Average Run Length.
-#' @param k double. Reference value of the CUSUM control chart.
-#' @param m integer. Number of simulation runs.
-#' @param side character. Default is "low" to calculate ARL for the upper arm of the V-mask. If side = "up",
-#'  calculate the lower arm of the V-mask.
-#' @param df DataFrame. First column are Parsonnet Score values within a range of zero to 100 representing
-#' the preoperative patient risk. The second column are binary (0/1) outcome values of each operation.
-#' @param coeff NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta} from the binary
-#' logistic regression model. For more information see details.
-#' @param yemp boolean. Use emirical outcome value.
-#' @param nc integer. Number of cores.
-#' @param verbose boolean. If TRUE verbose output is included, if FALSE a quiet calculation of h is done.
+#' @param L0 Double. Prespecified in-control Average Run Length.
+#' @param k Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
+#' value. Can be determined with function \code{\link{optimal_k}}.
+#' @param m Integer. Number of simulation runs.
+#' @param side Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
+#'  If side = \code{"up"}, calculate the lower arm of the V-mask.
+#' @param df Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+#' \code{100} representing the preoperative patient risk. The second column are binary (0/1)
+#' outcome values of each operation.
+#' @param coeff Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' from the binary logistic regression model. For more information see details.
+#' @param yemp Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+#'  binary logistc regression model.
+#' @param nc Integer. Number of cores.
+#' @param jmax Integer. Number of digits for grid search.
+#' @param verbose Logical. If \code{TRUE} verbose output is included, if \code{FALSE} a quiet
+#' calculation of \code{h} is done.
 #'
-#' @return Returns a single value which is the control limit h for a given ARL.
+#' @return Returns a single value which is the control limit \code{h} for a given ARL.
 #'
-#' @template eocusum_arl_h_sim
+#' @details The function \code{eocusum_arl_h_sim} determines the control limit for given in-control
+#'  ARL (\code{L0}) by applying a multi-stage search procedure which includes secant rule and the
+#'   parallel version of \code{\link{eocusum_arl_sim}} using \code{\link{mclapply}}.
 #'
-#' @details The function \code{eocusum_arl_h_sim} determines the control limit for given in-control ARL (L0) by applying a
-#' multi-stage search procedure which includes secant rule and the parallel version of \code{\link{eocusum_arl_sim}}
-#' using \code{\link{mclapply}}.
+#' @author Philipp Wittenberg
+#'
+#' @export
+#' @examples
+#'\donttest{
+#'
+#'# This function is deprecated. See eocusum_crit_sim() instead.
+#'
+#'  }
+eocusum_arl_h_sim <- function(L0, k, df, coeff, m = 100, yemp = TRUE, side = "low", nc = 1, jmax = 4, verbose = FALSE) {
+
+  .Deprecated("eocusum_arl_h_sim")
+  eocusum_crit_sim(L0 = L0, k = k, df = df, coeff = coeff, m = m, yemp = yemp, side = side, nc = nc, jmax = jmax, verbose = verbose)
+}
+
+#' @name eocusum_crit_sim
+#' @title Compute alarm threshold of EO-CUSUM control charts using simulation
+#' @description Compute alarm threshold of EO-CUSUM control charts using simulation.
+#'
+#' @param L0 Double. Prespecified in-control Average Run Length.
+#' @param k Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
+#' value. Can be determined with function \code{\link{optimal_k}}.
+#' @param m Integer. Number of simulation runs.
+#' @param side Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
+#'  If side = \code{"up"}, calculate the lower arm of the V-mask.
+#' @param df Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+#' \code{100} representing the preoperative patient risk. The second column are binary (0/1)
+#' outcome values of each operation.
+#' @param coeff Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+#' from the binary logistic regression model. For more information see details.
+#' @param yemp Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+#'  binary logistc regression model.
+#' @param nc Integer. Number of cores.
+#' @param jmax Integer. Number of digits for grid search.
+#' @param verbose Logical. If \code{TRUE} verbose output is included, if \code{FALSE} a quiet
+#' calculation of \code{h} is done.
+#'
+#' @return Returns a single value which is the control limit \code{h} for a given ARL.
+#'
+#' @template eocusum_crit_sim
+#'
+#' @details The function \code{eocusum_crit_sim} determines the control limit for given in-control
+#'  ARL (\code{L0}) by applying a multi-stage search procedure which includes secant rule and the
+#'   parallel version of \code{\link{eocusum_arl_sim}} using \code{\link{mclapply}}.
 #'
 #' @author Philipp Wittenberg
 #' @export
-eocusum_arl_h_sim <- function(L0, k, df, coeff, m = 100, yemp = TRUE, side = "low", nc = 1, verbose = FALSE) {
+eocusum_crit_sim <- function(L0, k, df, coeff, m = 100, yemp = TRUE, side = "low", nc = 1, jmax = 4, verbose = FALSE) {
   L0 <- as.integer(L0)
   if (is.na(L0) || L0 <= 0) {stop("Given in-control ARL 'L0' must be a positive integer")}
   k <- as.numeric(k)
@@ -377,77 +413,28 @@ eocusum_arl_h_sim <- function(L0, k, df, coeff, m = 100, yemp = TRUE, side = "lo
   df <- as.data.frame(df)
   if (is.null(coeff) || is.na(coeff)  || length(coeff)  != 2) {stop("Model coefficients 'coeff' must be a numeric vector with two elements")}
   coeff <- as.vector(coeff)
-  side <- switch(as.character(side), low = 1, up = 2)
   if (is.null(side)) {
-    warning("no valid input, using side=low (deterioration) as default")
-    side <- 1
+    warning("No valid input, using side='low' (deterioration) as default")
+    side <- c("low")
   }
-  h2 <- 1
-  L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h2, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-  LL <- NULL
-  while ( L2 < L0 & h2 < 6 ) {
-    L1 <- L2
-    h2 <- h2 + 1
-    L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h2, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-    if ( verbose ) cat(paste("(ii)\t", h2, "\t", L2, "\n"))
-    LL <- c(LL, L2)
+  for ( h in 1:10 ) {
+    L1 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
+    if ( verbose ) cat(paste("h =", h, "\tARL =", L1, "\n"))
+    if ( L1 > L0 ) break
   }
-  if ( L2 < L0 ) {
-    x  <- 1:5
-    LM <- stats::lm(LL ~ I(x) + I(x^2) )
-    beta <- stats::coef(LM)
-    p <- beta[2] / beta[3]
-    q <- (beta[1] - L0) / beta[3]
-    h2 <- -p / 2 + 1 * sqrt(p^2 / 4 - q)
-    L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h2, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-    if ( verbose ) cat(paste("(iii)\t", h2, "\t", L2, "\n"))
-    if ( L2 < L0 ) {
-      while ( L2 < L0 ) {
-        L1 <- L2
-        h2 <- h2 + 1
-        L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h2, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-        if ( verbose ) cat(paste("(iv)a\t", h2, "\t", L2, "\n"))
-        }
-      h1 <- h2 - 1
-    } else {
-      while ( L2 >= L0 ) {
-        L1 <- L2
-        h2 <- h2 - 1
-        L2 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h2, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-        if ( verbose ) cat(paste("(iv)b\t", h2, "\t", L2, "\n"))
-      }
-      h1 <- h2 + 1
+  h1 <- h
+
+  for ( j in 1:jmax ) {
+    for ( dh in 1:19 ) {
+      h <- h1 + (-1)^j*dh/10^j
+      L1 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
+      if ( verbose ) cat(paste("h =", h, "\tARL =", L1, "\n"))
+      if ( (j %% 2 == 1 & L1 < L0) | (j %% 2 == 0 & L1 > L0) ) break
     }
-    } else {
-    h1 <- h2 - 1
+    h1 <- h
   }
-  h.error <- 1
-  a.error <- 1
-  scaling <- 10^3
-  while ( a.error > 1e-4 & h.error > 1e-6 ) {
-    h3 <- h1 + (L0 - L1) / (L2 - L1) * (h2 - h1)
-    L3 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h3, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-    if ( verbose ) cat(paste("(v)\t", h3, "\t", L3, "\n"))
-    h1 <- h2
-    h2 <- h3
-    L1 <- L2
-    L2 <- L3
-    a.error <- min( c(abs(L2 - L0), abs(L2 - L1) ) )
-    h.error <- abs(h2 - h1)
-    if ( h.error < 0.5 / scaling ) {
-      if ( L3 < L0 ) {
-        h3 <- ( round( h3 * scaling ) + 1 ) / scaling - 1e-6
-        L3 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h3, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-        if ( verbose ) cat(paste("(vi)\t", h3, "\t", L3, "\n"))
-      }
-      break
-    }
-  }
-  if ( L3 < L0 ) {
-    h3 <- ( round( h3 * scaling ) + 1 ) / scaling - 1e-6
-    L3 <- mean(do.call(c, parallel::mclapply(1:m, eocusum_arl_sim, k = k, h = h3, df = df, yemp = yemp, side = side, coeff = coeff, mc.cores = nc)))
-    if ( verbose ) cat(paste("(vii)\t", h3, "\t", L3, "\n"))
-  }
-  h <- h3
+
+  if ( L1 < L0 ) h <- h + 1/10^jmax
+
   h
 }

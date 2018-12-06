@@ -5,8 +5,8 @@
     .Call(`_vlad_gettherisk`, parsonnetscore, coeff)
 }
 
-.optimal_k <- function(QA, parsonnetscores, coeff) {
-    .Call(`_vlad_optimal_k`, QA, parsonnetscores, coeff)
+.optimal_k <- function(QA, df, coeff, yemp) {
+    .Call(`_vlad_optimal_k`, QA, df, coeff, yemp)
 }
 
 .calceo <- function(df, coeff, yemp) {
@@ -21,16 +21,24 @@
     .Call(`_vlad_eocusum_arloc_sim`, r, k, h, df, coeff, coeff2, QS, side)
 }
 
-.eocusum_adoc_sim <- function(r, k, h, df, coeff, coeff2, QS, side, type, m) {
-    .Call(`_vlad_eocusum_adoc_sim`, r, k, h, df, coeff, coeff2, QS, side, type, m)
+.eocusum_ad_sim <- function(r, k, h, df, coeff, coeff2, QS, side, type, m) {
+    .Call(`_vlad_eocusum_ad_sim`, r, k, h, df, coeff, coeff2, QS, side, type, m)
+}
+
+.racusum_arl_mc <- function(pmix, RA, RQ, h, scaling, rounding, method) {
+    .Call(`_vlad_racusum_arl_mc`, pmix, RA, RQ, h, scaling, rounding, method)
+}
+
+.racusum_crit_mc <- function(pmix, L0, RA, R, scaling, rounding, method, jmax, verbose) {
+    .Call(`_vlad_racusum_crit_mc2`, pmix, L0, RA, R, scaling, rounding, method, jmax, verbose)
 }
 
 .llr_score <- function(df, coeff, R0, RA, yemp) {
     .Call(`_vlad_llr_score`, df, coeff, R0, RA, yemp)
 }
 
-.cusum_arl_sim <- function(r, h, df, R0, RA) {
-    .Call(`_vlad_cusum_arl_sim`, r, h, df, R0, RA)
+.bcusum_arl_sim <- function(r, h, df, R0, RA) {
+    .Call(`_vlad_bcusum_arl_sim`, r, h, df, R0, RA)
 }
 
 .racusum_arl_sim <- function(r, coeff, h, df, R0, RA, yemp) {

@@ -7,21 +7,22 @@
 llr_score(df, coeff, R0 = 1, RA = 2, yemp = TRUE)
 }
 \arguments{
-\item{df}{DataFrame. First column are Parsonnet Score values within a range of zero to 100 representing
-the preoperative patient risk. The second column are binary (0/1) outcome values of each operation.}
+\item{df}{Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+\code{100} representing the preoperative patient risk. The second column are binary (\code{0/1})
+ outcome values of each operation.}
 
-\item{coeff}{NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 from the binary logistic regression model.}
 
-\item{R0}{double. Odds ratio of death under the null hypotheses.}
+\item{R0}{Double. Odds ratio of death under the null hypotheses.}
 
-\item{RA}{double. Odds ratio of death under the alternative hypotheses.
-Detecting deterioration in performance with increased mortality risk by doubling the odds Ratio
-RA=2. Detecting improvement in performance with decreased mortality risk by halving the odds
-ratio of death RA=1/2.}
+\item{RA}{Double. Odds ratio of death under the alternative hypotheses. Detecting deterioration
+in performance with increased mortality risk by doubling the odds Ratio \code{RA = 2}. Detecting
+ improvement in performance with decreased mortality risk by halving the odds ratio of death
+ \code{RA = 1/2}.}
 
-\item{yemp}{boolean. If TRUE use observed outcome value, if FALSE use estimated binary logistc
-regression model.}
+\item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+binary logistc regression model.}
 }
 \value{
 Returns a single value which is the log-likelihood ratio score.
@@ -30,38 +31,52 @@ Returns a single value which is the log-likelihood ratio score.
 Compute the log-likelihood ratio score.
 }
 \examples{
-require(vlad)
-# see Steiner et al. (2000) p. 446 or Steiner (2014) p. 234
-coeff <- c("(Intercept)"=-3.68, "Parsonnet"=0.077)
-# Log-likelihood ratio scores for detecting an increase in the failure rate:
-# low risk patients with a Parsonnet score of zero
+\dontrun{
+library(vlad)
+## see Steiner et al. (2000) p. 446 or Steiner (2014) p. 234
+coeff <- c("(Intercept)" = -3.68, "Parsonnet" = 0.077)
+## Log-likelihood ratio scores for detecting an increase in the failure rate:
+## low risk patients with a Parsonnet score of zero
 
-llr_score(df=data.frame(as.integer(0), 0), coeff=coeff, RA=2)
-llr_score(df=data.frame(as.integer(0), 1), coeff=coeff, RA=2)
+llr_score(df = data.frame(as.integer(0), 0), coeff = coeff, RA = 2)
+llr_score(df = data.frame(as.integer(0), 1), coeff = coeff, RA = 2)
 
-# higher risk patients with a Parsonnet score of 50
-llr_score(df=data.frame(as.integer(50), 0), coeff=coeff, RA=2)
-llr_score(df=data.frame(as.integer(50), 1), coeff=coeff, RA=2)
+## higher risk patients with a Parsonnet score of 50
+llr_score(df = data.frame(as.integer(50), 0), coeff = coeff, RA = 2)
+llr_score(df = data.frame(as.integer(50), 1), coeff = coeff, RA = 2)
 
-# see Steiner (2014) p. 234
-# Log-likelihood ratio scores for detecting an decrease in the failure rate:
-# low risk patients with a Parsonnet score of zero
-llr_score(df=data.frame(as.integer(0), 0), coeff=coeff, RA=1/2)
-llr_score(df=data.frame(as.integer(0), 1), coeff=coeff, RA=1/2)
+## see Steiner (2014) p. 234
+## Log-likelihood ratio scores for detecting an decrease in the failure rate:
+## low risk patients with a Parsonnet score of zero
+llr_score(df = data.frame(as.integer(0), 0), coeff = coeff, RA = 1/2)
+llr_score(df = data.frame(as.integer(0), 1), coeff = coeff, RA = 1/2)
 
-# higher risk patients with a Parsonnet score of 50
-llr_score(df=data.frame(as.integer(50), 0), coeff=coeff, RA=1/2)
-llr_score(df=data.frame(as.integer(50), 1), coeff=coeff, RA=1/2)
+## higher risk patients with a Parsonnet score of 50
+llr_score(df = data.frame(as.integer(50), 0), coeff = coeff, RA = 1/2)
+llr_score(df = data.frame(as.integer(50), 1), coeff = coeff, RA = 1/2)
+
+## see Rigdon and Fricker p. 225 and 226
+## detecting an increase in the failure rate:
+coeff <- c("(Intercept)" = -3.67, "Parsonnet" = 0.077)
+df <- data.frame(Parsonnet = c(19L, 19L, 0L, 0L), status = c(0, 1, 0, 1))
+lapply(seq_along(df$Parsonnet), function(i) round(llr_score(df = df[i, ], coeff = coeff,
+ RA = 2), 4))
+
+## detecting an decrease in the failure rate:
+round(llr_score(df = data.frame(19L, 0), coeff = coeff, RA = 1/2), 5)
+}
 }
 \references{
 Steiner SH, Cook RJ, Farewell VT and Treasure T (2000).
- “Monitoring surgical performance using risk-adjusted cumulative sum charts.”
- \emph{Biostatistics}, \strong{1}(4), pp. 441-452.
- doi: \href{https://doi.org/10.1093/biostatistics/1.4.441}{10.1093/biostatistics/1.4.441}.
+ Monitoring surgical performance using risk-adjusted cumulative sum charts.
+ \emph{Biostatistics}, \strong{1}(4), pp. 441--452.
 
-Steiner S (2014). “Risk-Adjusted Monitoring of Outcomes in Health Care.”
-In Lawless JF (ed.), \emph{Statistics in Action}, pp. 225-242. Informa UK Limited.
-doi: \href{https://doi.org/10.1201/b16597-15}{10.1201/b16597-15}.
+Steiner S (2014). Risk-Adjusted Monitoring of Outcomes in Health Care.
+In Lawless JF (ed.), \emph{Statistics in Action}, pp. 225--242. Informa UK Limited.
+
+Rigdon SE and Fricker RD (2015). Health Surveillance.
+In Chen DG and Wilson J (eds) \emph{Innovative Statistical Methods for Public Health Data},
+pp. 203--249. Springer, Cham.
 }
 \author{
 Philipp Wittenberg

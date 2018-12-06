@@ -7,38 +7,39 @@
 racusum_arl_sim(r, coeff, h, df, R0 = 1, RA = 2, yemp = TRUE)
 }
 \arguments{
-\item{r}{Integer vector. Number of runs.}
+\item{r}{Integer Vector. Number of runs.}
 
-\item{coeff}{NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 from the binary logistic regression model.}
 
-\item{h}{double. Control Chart limit for detecting deterioration/improvement.}
+\item{h}{Double. Control Chart limit for detecting deterioration/improvement.}
 
-\item{df}{DataFrame. First column are Parsonnet Score values within a range of zero to 100 representing
-the preoperative patient risk. The second column are binary (0/1) outcome values of each operation.}
+\item{df}{Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+\code{100} representing the preoperative patient risk. The second column are binary (\code{0/1})
+ outcome values of each operation.}
 
-\item{R0}{double. Odds ratio of death under the null hypotheses.}
+\item{R0}{Double. Odds ratio of death under the null hypotheses.}
 
-\item{RA}{double. Odds ratio of death under the alternative hypotheses.
-Detecting deterioration in performance with increased mortality risk by doubling the odds Ratio
-RA=2. Detecting improvement in performance with decreased mortality risk by halving the odds
-ratio of death RA=1/2.}
+\item{RA}{Double. Odds ratio of death under the alternative hypotheses. Detecting deterioration
+in performance with increased mortality risk by doubling the odds Ratio \code{RA = 2}. Detecting
+ improvement in performance with decreased mortality risk by halving the odds ratio of death
+ \code{RA = 1/2}.}
 
-\item{yemp}{boolean. If TRUE use observed outcome value, if FALSE use estimated binary logistc
-regression model.}
+\item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+binary logistc regression model.}
 }
 \value{
 Returns a single value which is the Run Length.
 }
 \description{
-Compute ARLs of RA-CUSUM control charts using simulation.
+Computes the Average Run Length of a risk-adjusted cumulative sum control chart
+ using simulation.
 }
 \examples{
 \dontrun{
-library("vlad")
-library("spcadjust")
+library(vlad)
 set.seed(1234)
-data("cardiacsurgery")
+data("cardiacsurgery", package="spcadjust")
 df1 <- subset(cardiacsurgery, select=c(Parsonnet, status))
 coeff1 <- round(coef(glm(status ~ Parsonnet, data=df1, family="binomial")), 3)
 
@@ -81,9 +82,13 @@ rbind(df.sim1, df.sim2)
 }
 \references{
 Steiner SH, Cook RJ, Farewell VT and Treasure T (2000).
- “Monitoring surgical performance using risk-adjusted cumulative sum charts.”
- \emph{Biostatistics}, \strong{1}(4), pp. 441-452.
- doi: \href{https://doi.org/10.1093/biostatistics/1.4.441}{10.1093/biostatistics/1.4.441}.
+ Monitoring surgical performance using risk-adjusted cumulative sum charts.
+ \emph{Biostatistics}, \strong{1}(4), pp. 441--452.
+
+Wittenberg P, Gan FF, Knoth S (2018).
+A simple signaling rule for variable life-adjusted display derived from
+an equivalent risk-adjusted CUSUM chart.
+\emph{Statistics in Medicine}, \strong{37}(16), pp 2455--2473.
 }
 \author{
 Philipp Wittenberg

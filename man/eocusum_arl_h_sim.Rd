@@ -4,72 +4,54 @@
 \alias{eocusum_arl_h_sim}
 \title{Compute alarm threshold of EO-CUSUM control charts using simulation}
 \usage{
-eocusum_arl_h_sim(L0, k, df, coeff, m = 100, yemp = TRUE, side = "low",
-  nc = 1, verbose = FALSE)
+eocusum_arl_h_sim(L0, k, df, coeff, m = 100, yemp = TRUE,
+  side = "low", nc = 1, jmax = 4, verbose = FALSE)
 }
 \arguments{
-\item{L0}{double. Prespecified in-control Average Run Length.}
+\item{L0}{Double. Prespecified in-control Average Run Length.}
 
-\item{k}{double. Reference value of the CUSUM control chart.}
+\item{k}{Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
+value. Can be determined with function \code{\link{optimal_k}}.}
 
-\item{df}{DataFrame. First column are Parsonnet Score values within a range of zero to 100 representing
-the preoperative patient risk. The second column are binary (0/1) outcome values of each operation.}
+\item{df}{Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+\code{100} representing the preoperative patient risk. The second column are binary (0/1)
+outcome values of each operation.}
 
-\item{coeff}{NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta} from the binary
-logistic regression model. For more information see details.}
+\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+from the binary logistic regression model. For more information see details.}
 
-\item{m}{integer. Number of simulation runs.}
+\item{m}{Integer. Number of simulation runs.}
 
-\item{yemp}{boolean. Use emirical outcome value.}
+\item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+binary logistc regression model.}
 
-\item{side}{character. Default is "low" to calculate ARL for the upper arm of the V-mask. If side = "up",
-calculate the lower arm of the V-mask.}
+\item{side}{Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
+If side = \code{"up"}, calculate the lower arm of the V-mask.}
 
-\item{nc}{integer. Number of cores.}
+\item{nc}{Integer. Number of cores.}
 
-\item{verbose}{boolean. If TRUE verbose output is included, if FALSE a quiet calculation of h is done.}
+\item{jmax}{Integer. Number of digits for grid search.}
+
+\item{verbose}{Logical. If \code{TRUE} verbose output is included, if \code{FALSE} a quiet
+calculation of \code{h} is done.}
 }
 \value{
-Returns a single value which is the control limit h for a given ARL.
+Returns a single value which is the control limit \code{h} for a given ARL.
 }
 \description{
 Compute alarm threshold of EO-CUSUM control charts using simulation.
 }
 \details{
-The function \code{eocusum_arl_h_sim} determines the control limit for given in-control ARL (L0) by applying a
-multi-stage search procedure which includes secant rule and the parallel version of \code{\link{eocusum_arl_sim}}
-using \code{\link{mclapply}}.
+The function \code{eocusum_arl_h_sim} determines the control limit for given in-control
+ ARL (\code{L0}) by applying a multi-stage search procedure which includes secant rule and the
+  parallel version of \code{\link{eocusum_arl_sim}} using \code{\link{mclapply}}.
 }
 \examples{
-\dontrun{
-library("vlad")
-library("spcadjust")
-set.seed(1234)
-data("cardiacsurgery")
-df1 <- subset(cardiacsurgery, select=c(Parsonnet, status))
-## estimate coefficients from logit model
-coeff1 <- round(coef(glm(status~Parsonnet, data=df1, family="binomial")), 3)
-## Number of simulation runs
-m <- 10^3
-## Number of cores
-nc <- parallel::detectCores()
-## Detect deterioration
-QA <- 2
-kopt <- optimal_k(QA=QA, parsonnetscores=df1$Parsonnet, coeff=coeff1)
-h <- eocusum_arl_h_sim(L0=370, df=df1, k=kopt, m=m, coeff=coeff1, side="low", nc=nc)
-## V-Mask parameters
-d <- h/kopt
-theta <- atan(kopt)*180/pi
-cbind(kopt, h, theta, d)
-}
-}
-\references{
-Barnard GA (1959). "Control charts and stochastic processes."
-\emph{J R Stat Soc Series B Stat Methodol}, \strong{21}(2), pp. 239-271.
+\donttest{
 
-Kemp KW (1961). "The Average Run Length of the Cumulative Sum Chart
-when a V-mask is used." \emph{J R Stat Soc Series B Stat Methodol}, \strong{23}(1),pp. 149-153.
-doi: \href{https://doi.org/10.2307/2985287}{10.2307/2985287}.
+# This function is deprecated. See eocusum_crit_sim() instead.
+
+ }
 }
 \author{
 Philipp Wittenberg

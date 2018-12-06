@@ -7,24 +7,26 @@
 eocusum_arloc_sim(r, k, h, df, coeff, coeff2, QS = 1, side = "low")
 }
 \arguments{
-\item{r}{int. Number of of simulation runs.}
+\item{r}{Integer. Number of of simulation runs.}
 
-\item{k}{double. Reference value of the CUSUM control chart.}
+\item{k}{Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
+value. Can be determined with function \code{\link{optimal_k}}.}
 
-\item{h}{double. Decision interval (alarm limit, threshold) of the CUSUM control chart.}
+\item{h}{Double. Decision interval (alarm limit, threshold) of the CUSUM control chart.}
 
-\item{df}{DataFrame. First column Parsonnet Score and second column outcome of each operation.}
+\item{df}{Data Frame. First column Parsonnet Score and second column outcome of each operation.}
 
-\item{coeff}{NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 from the binary logistic regression model.}
 
-\item{coeff2}{NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+\item{coeff2}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 from the binary logistic regression model of a resampled dataset.}
 
-\item{QS}{double. Defines the performance of a surgeon with the odds ratio ratio of death Q.}
+\item{QS}{Double. Defines the performance of a surgeon with the odds ratio ratio of death
+\code{Q}.}
 
-\item{side}{character. Default is "low" to calculate ARL for the upper arm of the V-mask. If side = "up",
-calculate the lower arm of the V-mask.}
+\item{side}{Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
+If side = \code{"up"}, calculate the lower arm of the V-mask.}
 }
 \value{
 Returns a single value which is the Run Length.
@@ -34,11 +36,9 @@ Compute Out of Control ARLs of EO-CUSUM control charts using simulation.
 }
 \examples{
 \dontrun{
-library("vlad")
-library("spcadjust")
 ## Datasets
-data("cardiacsurgery")
-s5000 <- dplyr::sample_n(cardiacsurgery, size=5000, replace=TRUE)
+data("cardiacsurgery", package = "spcadjust")
+s5000 <- dplyr::sample_n(cardiacsurgery, size = 5000, replace = TRUE)
 df1 <- subset(cardiacsurgery, select=c(Parsonnet, status))
 df2 <- subset(s5000, select=c(Parsonnet, status))
 ## estimate coefficients from logit model
@@ -93,10 +93,10 @@ parallel::stopCluster(cl)
 }
 }
 \references{
-Steiner SH, Cook RJ, Farewell VT and Treasure T (2000).
- “Monitoring surgical performance using risk-adjusted cumulative sum charts.”
- \emph{Biostatistics}, \strong{1}(4), pp. 441-452.
- doi: \href{https://doi.org/10.1093/biostatistics/1.4.441}{10.1093/biostatistics/1.4.441}.
+Wittenberg P, Gan FF, Knoth S (2018).
+A simple signaling rule for variable life-adjusted display derived from
+an equivalent risk-adjusted CUSUM chart.
+\emph{Statistics in Medicine}, \strong{37}(16), pp 2455--2473.
 }
 \author{
 Philipp Wittenberg

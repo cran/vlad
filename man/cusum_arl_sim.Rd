@@ -2,27 +2,32 @@
 % Please edit documentation in R/racusum_sim.R
 \name{cusum_arl_sim}
 \alias{cusum_arl_sim}
-\title{Compute ARLs of the Bernoulli CUSUM control charts using simulation}
+\title{Compute ARLs of Bernoulli CUSUM control charts using simulation}
 \usage{
 cusum_arl_sim(r, h, df, R0 = 1, RA = 2)
 }
 \arguments{
-\item{r}{Integer vector. Number of runs.}
+\item{r}{Integer Vector. Number of runs.}
 
-\item{h}{double. Control Chart limit for detecting deterioration/improvement.}
+\item{h}{Double. Control Chart limit for detecting deterioration/improvement.}
 
-\item{df}{DataFrame. First column are Parsonnet Score values within a range of zero to 100 representing
-the preoperative patient risk. The second column are binary (0/1) outcome values of each operation.}
+\item{df}{Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+\code{100} representing the preoperative patient risk. The second column are binary (\code{0/1})
+ outcome values of each operation.}
 
-\item{R0}{double. Odds ratio of death under the null hypotheses.}
+\item{R0}{Double. Odds ratio of death under the null hypotheses.}
 
-\item{RA}{double. Odds ratio of death under the alternative hypotheses.}
-}
-\value{
-Returns a single value which is the Run Length.
+\item{RA}{Double. Odds ratio of death under the alternative hypotheses.}
 }
 \description{
-Compute ARLs of the Bernoulli CUSUM control charts using simulation.
+Compute ARLs of Bernoulli cumulative sum control charts using simulation.
+}
+\examples{
+\donttest{
+
+# This function is deprecated. See bcusum_arl_sim() instead.
+
+ }
 }
 \author{
 Philipp Wittenberg

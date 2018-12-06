@@ -5,77 +5,98 @@
 \title{Compute alarm threshold of Out of Control EO-CUSUM control charts using simulation}
 \usage{
 eocusum_arloc_h_sim(L0, k, df, coeff, coeff2, m = 100, QS = 1,
-  side = "low", nc = 1, verbose = FALSE)
+  side = "low", nc = 1, jmax = 4, verbose = FALSE)
 }
 \arguments{
-\item{L0}{double. Prespecified in-control Average Run Length.}
+\item{L0}{Double. Prespecified in-control Average Run Length.}
 
-\item{k}{double. Reference value of the CUSUM control chart.}
+\item{k}{Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
+value. Can be determined with function \code{\link{optimal_k}}.}
 
-\item{df}{DataFrame. First column are Parsonnet Score values within a range of zero to 100 representing
-the preoperative patient risk. The second column are binary (0/1) outcome values of each operation.}
+\item{df}{Data Frame. First column are Parsonnet Score values within a range of \code{0} to
+\code{100} representing the preoperative patient risk. The second column are binary (\code{0/1})
+ outcome values of each operation.}
 
-\item{coeff}{NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 from the binary logistic regression model.}
 
-\item{coeff2}{NumericVector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
+\item{coeff2}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
 from the binary logistic regression model of a resampled dataset.}
 
-\item{m}{integer. Number of simulation runs.}
+\item{m}{Integer. Number of simulation runs.}
 
-\item{QS}{double. Defines the performance of a surgeon with the odds ratio ratio of death Q.}
+\item{QS}{Double. Defines the performance of a surgeon with the odds ratio ratio of death
+\code{Q}.}
 
-\item{side}{character. Default is "low" to calculate ARL for the upper arm of the V-mask. If side = "up",
-calculate the lower arm of the V-mask.}
+\item{side}{Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
+If side = \code{"up"}, calculate the lower arm of the V-mask.}
 
-\item{nc}{integer. Number of cores.}
+\item{nc}{Integer. Number of cores.}
 
-\item{verbose}{boolean. If TRUE verbose output is included, if FALSE a quiet calculation of h is done.}
+\item{jmax}{Integer. Number of digits for grid search.}
+
+\item{verbose}{Logical. If \code{TRUE} verbose output is included, if \code{FALSE} a quiet
+calculation of \code{h} is done.}
 }
 \value{
-Returns a single value which is the control limit h for a given ARL.
+Returns a single value which is the control limit \code{h} for a given ARL.
 }
 \description{
 Compute alarm threshold (Out of Control ARL) of EO-CUSUM control charts using
  simulation.
 }
 \details{
-The function \code{eocusum_arloc_h_sim} determines the control limit for given in-control ARL (L0) by applying a
-multi-stage search procedure which includes secant rule and the parallel version of \code{\link{eocusum_arloc_sim}}
-using \code{\link{mclapply}}.
+The function \code{eocusum_arloc_h_sim} determines the control limit for given
+in-control ARL (\code{L0}) by applying a multi-stage search procedure which includes secant rule
+ and the parallel version of \code{\link{eocusum_arloc_sim}} using \code{\link{mclapply}}.
 }
 \examples{
 \dontrun{
-library("vlad")
-library("spcadjust")
-## Datasets
-data("cardiacsurgery")
-s5000 <- dplyr::sample_n(cardiacsurgery, size=5000, replace=TRUE)
-df1 <- subset(cardiacsurgery, select=c(Parsonnet, status))
-df2 <- subset(s5000, select=c(Parsonnet, status))
+data("cardiacsurgery", package = "spcadjust")
+library("dplyr")
+
+## preprocess data to 30 day mortality and subset phase I/II
+cardiacsurgery <- cardiacsurgery \%>\% rename(s = Parsonnet) \%>\%
+  mutate(y = ifelse(status == 1 & time <= 30, 1, 0),
+         phase = factor(ifelse(date < 2*365, "I", "II")))
+
+s5000 <- sample_n(cardiacsurgery, size = 5000, replace = TRUE)
+df1 <- select(cardiacsurgery, s, y)
+df2 <- select(s5000, s, y)
+
 ## estimate coefficients from logit model
-coeff1 <- round(coef(glm(status~Parsonnet, data=df1, family="binomial")), 3)
-coeff2 <- round(coef(glm(status~Parsonnet, data=df2, family="binomial")), 3)
+coeff1 <- round(coef(glm(y ~ s, data = df1, family = "binomial")), 3)
+coeff2 <- round(coef(glm(y ~ s, data = df2, family = "binomial")), 3)
+
 ## Number of simulation runs
 m <- 10^3
 ## Number of cores
 nc <- parallel::detectCores()
-## Lower cusum (detecting deterioration)
+
+## Lower CUSUM (detecting deterioration)
 ## k = 0
-eocusum_arloc_h_sim(L0=370, df=df1, k=0, m=m, side="low", coeff=coeff1, coeff2=coeff2, nc=nc)
-## k = kopt
-QA <- 2
-# use package function optimal_k to determine k
-kopt <- optimal_k(QA=QA, parsonnetscores=df1$Parsonnet, coeff=coeff1)
-eocusum_arloc_h_sim(L0=370, df=df1, k=kopt, m=m, side="low", coeff=coeff1, coeff2=coeff2, nc=nc)
-## Upper cusum (detecting improvement)
+eocusum_arloc_h_sim(L0 = 370, df = df1, k = 0, m = m, side = "low", coeff = coeff1, coeff2 =
+coeff2, nc = nc)
+## use function optimal_k() to determine k = kopt
+kopt <- optimal_k(QA = 2, df = S2I, coeff = coeff1, yemp = FALSE)
+eocusum_arloc_h_sim(L0 = 370, df = df1, k = kopt, m = m, side = "low", coeff = coeff1, coeff2 =
+coeff2, nc = nc)
+
+## Upper CUSUM (detecting improvement)
 ## k = 0
-eocusum_arloc_h_sim(L0=370, df=df1, k=0, m=m, side="up", coeff=coeff1, coeff2=coeff2, nc=nc)
-## k = kopt
-QA <- 1/2
-kopt <- optimal_k(QA=QA, parsonnetscores=df1$Parsonnet, coeff=coeff1)
-eocusum_arloc_h_sim(L0=370, df=df1, k=kopt, m=m, side="up", coeff=coeff1, coeff2=coeff2, nc=nc)
+eocusum_arloc_h_sim(L0 = 370, df = df1, k = 0, m = m, side = "up", coeff = coeff1, coeff2 =
+coeff2, nc = nc)
+## use function optimal_k() to determine k = kopt
+kopt <- optimal_k(QA = 1/2, df = S2I, coeff = coeff1, yemp = FALSE)
+eocusum_arloc_h_sim(L0 = 370, df = df1, k = kopt, m = m, side = "up", coeff = coeff1, coeff2 =
+ coeff2, nc = nc)
 }
+}
+\references{
+Wittenberg P, Gan FF, Knoth S (2018).
+A simple signaling rule for variable life-adjusted display derived from
+an equivalent risk-adjusted CUSUM chart.
+\emph{Statistics in Medicine}, \strong{37}(16), pp 2455--2473.
 }
 \author{
 Philipp Wittenberg
