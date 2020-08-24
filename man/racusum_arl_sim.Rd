@@ -4,26 +4,25 @@
 \alias{racusum_arl_sim}
 \title{Compute ARLs of RA-CUSUM control charts using simulation}
 \usage{
-racusum_arl_sim(r, coeff, h, df, R0 = 1, RA = 2, yemp = TRUE)
+racusum_arl_sim(r, pmix, h, RA = 2, RQ = 1, yemp = FALSE)
 }
 \arguments{
 \item{r}{Integer Vector. Number of runs.}
 
-\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
-from the binary logistic regression model.}
+\item{pmix}{Data Frame. A three column data frame. First column is the operation outcome.
+Second column are the predicted probabilities from the risk model. Third column can be either the
+ predicted probabilities from the risk model or average outcome.}
 
 \item{h}{Double. Control Chart limit for detecting deterioration/improvement.}
-
-\item{df}{Data Frame. First column are Parsonnet Score values within a range of \code{0} to
-\code{100} representing the preoperative patient risk. The second column are binary (\code{0/1})
- outcome values of each operation.}
-
-\item{R0}{Double. Odds ratio of death under the null hypotheses.}
 
 \item{RA}{Double. Odds ratio of death under the alternative hypotheses. Detecting deterioration
 in performance with increased mortality risk by doubling the odds Ratio \code{RA = 2}. Detecting
  improvement in performance with decreased mortality risk by halving the odds ratio of death
- \code{RA = 1/2}.}
+ \code{RA = 1/2}. Odds ratio of death under the null hypotheses is \code{1}.}
+
+\item{RQ}{Double. Defines the true performance of a surgeon with the odds ratio ratio of death
+\code{RQ}. Use \code{RQ = 1} to compute the in-control ARL and other values to compute the
+out-of-control ARL.}
 
 \item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
 binary logistc regression model.}
@@ -38,46 +37,27 @@ Computes the Average Run Length of a risk-adjusted cumulative sum control chart
 \examples{
 \dontrun{
 library(vlad)
+library(dplyr)
+data("cardiacsurgery", package = "spcadjust")
+
 set.seed(1234)
-data("cardiacsurgery", package="spcadjust")
-df1 <- subset(cardiacsurgery, select=c(Parsonnet, status))
-coeff1 <- round(coef(glm(status ~ Parsonnet, data=df1, family="binomial")), 3)
+SALLI <- cardiacsurgery \%>\% mutate(s = Parsonnet) \%>\%
+  mutate(y = ifelse(status == 1 & time <= 30, 1, 0),
+         phase = factor(ifelse(date < 2*365, "I", "II"))) \%>\%
+  filter(phase == "I") \%>\% select(s, y)
 
-## Parallel Simulation 1: y = random (10^4 runs, RA=2)
-m <- 10^4; h_vec <- 2.7; yemp <- FALSE
-no_cores <- parallel::detectCores()
-cl <- parallel::makeCluster(no_cores)
-parallel::clusterExport(cl, c("h_vec", "racusum_arl_sim", "coeff1", "df1", "yemp"))
-time <- system.time( {
-  ARL <- array(NA, dim=c( length(h_vec), m))
-  for (h in h_vec) {
-    ARL[which(h_vec==h), ] <- parallel::parSapply(cl, 1:m, racusum_arl_sim, h=h, coeff=coeff1,
-                                                 df=df1, yemp=yemp, USE.NAMES=FALSE) }
-} )
-simMean <- apply(ARL, c(1), mean)
-simSE <- sqrt(apply(ARL, c(1), var)/m)
-print(list(simMean, simSE, time))
-parallel::stopCluster(cl)
-df.sim1 <- data.frame("RA"=2, "h"=h, "ARL"=simMean, "ARLSE"=simSE, "nsim"=m)
+## estimate risk model, get relative frequences and probabilities
+mod1 <- glm(y ~ s, data = SALLI, family = "binomial")
+y <- SALLI$y
+pi1 <- fitted.values(mod1)
 
-## Parallel Simulation 2: y = empirical (10^4 runs, RA=2)
-m <- 10^4; h_vec <- 2.7
-no_cores <- parallel::detectCores()
-cl <- parallel::makeCluster(no_cores)
-parallel::clusterExport(cl, c("h_vec", "racusum_arl_sim", "coeff1", "df1"))
-time <- system.time( {
-  ARL <- array(NA, dim=c( length(h_vec), m))
-  for (h in h_vec) {
-    ARL[which(h_vec==h), ] <- parallel::parSapply(cl, 1:m, racusum_arl_sim, h=h, coeff=coeff1,
-                                                 df=df1, USE.NAMES=FALSE) }
-} )
-simMean <- apply(ARL, c(1), mean)
-simSE <- sqrt(apply(ARL, c(1), var)/m)
-print(list(simMean, simSE, time))
-parallel::stopCluster(cl)
-df.sim2 <- data.frame("RA"=2, "h"=h, "ARL"=simMean, "ARLSE"=simSE, "nsim"=m)
+## set up patient mix (risk model)
+pmix <- data.frame(y, pi1, pi1)
+h <- 2.75599
 
-rbind(df.sim1, df.sim2)
+m <- 1e4
+RLS <- sapply(1:m, racusum_arl_sim, h=h, pmix=pmix, RA=2)
+data.frame(cbind(ARL=mean(RLS), ARLSE=sd(RLS)/sqrt(m), h, m))
 }
 }
 \references{

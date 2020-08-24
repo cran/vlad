@@ -4,27 +4,23 @@
 \alias{eocusum_ad_sim}
 \title{Compute steady-state ARLs of EO-CUSUM control charts using simulation}
 \usage{
-eocusum_ad_sim(r, k, h, df, coeff, coeff2, QS = 1, side = "low",
-  type = "cond", m = 50)
+eocusum_ad_sim(r, pmix, k, h, RQ = 1, side = "low", type = "cond", m = 50)
 }
 \arguments{
 \item{r}{Integer. Number of of simulation runs.}
+
+\item{pmix}{Data Frame. A three column data frame. First column is the operation outcome.
+Second column are the predicted probabilities from the risk model. Third column can be either the
+ predicted probabilities from the risk model or average outcome.}
 
 \item{k}{Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
 value. Can be determined with function \code{\link{optimal_k}}.}
 
 \item{h}{Double. Decision interval (alarm limit, threshold) of the CUSUM control chart.}
 
-\item{df}{Data Frame. First column Parsonnet Score and second column outcome of each operation.}
-
-\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
-from the binary logistic regression model.}
-
-\item{coeff2}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
-from the binary logistic regression model of a resampled dataset.}
-
-\item{QS}{Double. Defines the performance of a surgeon with the odds ratio ratio of death
-\code{Q}.}
+\item{RQ}{Double. Defines the true performance of a surgeon with the odds ratio ratio of death
+\code{RQ}. Use \code{RQ = 1} to compute the in-control ARL and other values to compute the
+out-of-control ARL.}
 
 \item{side}{Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
 If side = \code{"up"}, calculate the lower arm of the V-mask.}

@@ -2,66 +2,68 @@
 % Please edit documentation in R/eocusum_sim.R
 \name{optimal_k}
 \alias{optimal_k}
-\title{Compute optimal k}
+\title{Compute approximate optimal k}
 \usage{
-optimal_k(QA, df, coeff, yemp = TRUE)
+optimal_k(pmix, RA, yemp = FALSE)
 }
 \arguments{
-\item{QA}{Double. Defines the performance of a surgeon with the odds ratio ratio of death
-\code{Q}.}
+\item{pmix}{Data Frame. A three column data frame. First column is the operation outcome.
+Second column are the predicted probabilities from the risk model. Third column can be either the
+ predicted probabilities from the risk model or average outcome.}
 
-\item{df}{Data Frame. First column Parsonnet Score and second column outcome of each operation.}
+\item{RA}{Double. Odds ratio of death under the alternative hypotheses. Detecting deterioration
+in performance with increased mortality risk by doubling the odds Ratio \code{RA = 2}. Detecting
+ improvement in performance with decreased mortality risk by halving the odds ratio of death
+ \code{RA = 1/2}. Odds ratio of death under the null hypotheses is \code{1}.}
 
-\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
-from the binary logistic regression model. For more information see details.}
-
-\item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
-binary logistc regression model.}
+\item{yemp}{Logical. If \code{TRUE}, use emirical outcome values, else use model.}
 }
 \value{
-Returns a single value which is the approximate optimal \code{k} for a set of given
-Parsonnet scores.
+Returns a single value which is the approximate optimal \code{k}.
 }
 \description{
-Compute optimal k.
+Compute approximate optimal k.
 }
 \details{
-Formula deterioration:  \deqn{ k{det} = \frac{Q{A} - 1 - log(Q{A})}{log(Q{A})}\bar{p} , Q{A} > 1    }
-         Formula improvement:    \deqn{ k{imp} = \frac{1 - Q{A} + log(Q{A})}{log(Q{A})}\bar{p} , Q{A} < 1    }
+Formula deterioration:  \deqn{ k{det} = \frac{R{A} - 1 - log(R{A})}{log(R{A})}\bar{p} ,
+R{A} > 1    }
+         Formula improvement:    \deqn{ k{imp} = \frac{1 - R{A} + log(R{A})}{log(R{A})}\bar{p} ,
+R{A} < 1    }
 }
 \examples{
 \dontrun{
-library("dplyr")
 library(vlad)
+library(dplyr)
 data("cardiacsurgery", package = "spcadjust")
 
-## preprocess data to 30 day mortality and subset phase I (In-control) of surgeons 2
-S2I <- cardiacsurgery \%>\% rename(s = Parsonnet) \%>\%
+## preprocess data to 30 day mortality
+SALL <- cardiacsurgery \%>\% rename(s = Parsonnet) \%>\%
   mutate(y = ifelse(status == 1 & time <= 30, 1, 0),
-        phase = factor(ifelse(date < 2*365, "I", "II"))) \%>\%
-  filter(phase == "I", surgeon == 2) \%>\% select(s, y)
-
-coeff <- coef(glm(y ~ s, data = S2I, family = "binomial"))
+         phase = factor(ifelse(date < 2*365, "I", "II")))
+SI <- subset(SALL, phase == "I")
+GLM <- glm(y ~ s, data = SI, family = "binomial")
+pi1 <- predict(GLM, type = "response", newdata = data.frame(s = SI$s))
+pmix <- data.frame(SI$y, pi1, pi1)
 
 ## (Deterioration)
-optimal_k(QA = 2, df = S2I, coeff = coeff, yemp = FALSE)
+optimal_k(pmix = pmix, RA = 2)
 
 ## manually find optimal k for detecting deterioration
-QA <- 2
-pbar <- mean(sapply(S2I[, 1], gettherisk, coef = coeff))
-kopt <- pbar * ( QA - 1 - log(QA) ) / log(QA)
+RA <- 2
+pbar <- mean(pmix$pi1)
+kopt <- pbar * ( RA - 1 - log(RA) ) / log(RA)
 
-all.equal(kopt, optimal_k(QA = 2, df = S2I, coeff = coeff, yemp = FALSE))
+all.equal(kopt, optimal_k(pmix = pmix, RA = 2))
 
 ## (Improvement)
-optimal_k(QA = 1/2, df = S2I, coeff = coeff, yemp = FALSE)
+optimal_k(pmix = pmix, RA = 1/2)
 
 ## manually find optimal k for detecting improvement
-QA <- 1/2
-pbar <- mean(sapply(S2I[, 1], gettherisk, coef = coeff))
-kopt <- pbar * ( 1 - QA + log(QA) ) / log(QA)
+RA <- 1/2
+pbar <- mean(pmix$pi1)
+kopt <- pbar * ( 1 - RA + log(RA) ) / log(RA)
 
-all.equal(kopt, optimal_k(QA = 1/2, df = S2I, coeff = coeff, yemp = FALSE))
+all.equal(kopt, optimal_k(pmix = pmix, RA = 1/2))
 }
 }
 \references{

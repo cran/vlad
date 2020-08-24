@@ -51,6 +51,11 @@ t(r)
 data.frame(t(r)) \%>\% filter(l == max(l) | S == min(S))
 }
 }
+\references{
+Knoth S, Wittenberg P and Gan FF (2019).
+Risk-adjusted CUSUM charts under model error.
+\emph{Statistics in Medicine}, \strong{38}(12), pp. 2206--2218..
+}
 \author{
 Philipp Wittenberg
 }

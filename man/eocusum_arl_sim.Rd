@@ -4,20 +4,23 @@
 \alias{eocusum_arl_sim}
 \title{Compute ARLs of EO-CUSUM control charts using simulation}
 \usage{
-eocusum_arl_sim(r, k, h, df, coeff, yemp = TRUE, side = "low")
+eocusum_arl_sim(r, pmix, k, h, RQ = 1, yemp = FALSE, side = "low")
 }
 \arguments{
 \item{r}{Integer. Number of of simulation runs.}
+
+\item{pmix}{Data Frame. A three column data frame. First column is the operation outcome.
+Second column are the predicted probabilities from the risk model. Third column can be either the
+ predicted probabilities from the risk model or average outcome.}
 
 \item{k}{Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
 value. Can be determined with function \code{\link{optimal_k}}.}
 
 \item{h}{Double. Decision interval (alarm limit, threshold) of the CUSUM control chart.}
 
-\item{df}{Data Frame. First column Parsonnet Score and second column outcome of each operation.}
-
-\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
-from the binary logistic regression model.}
+\item{RQ}{Double. Defines the true performance of a surgeon with the odds ratio ratio of death
+\code{RQ}. Use \code{RQ = 1} to compute the in-control ARL and other values to compute the
+out-of-control ARL.}
 
 \item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
 binary logistc regression model.}
@@ -80,7 +83,7 @@ time <- system.time( {
   RLS <- array(NA, dim = c( length(QS_vec), length(h_vec), m))
   for (h in h_vec) {
     for (QS in QS_vec) {
-      cat(h, " ", QS, "\\n")
+      cat(h, " ", QS, "\n")
       RLS[which(QS_vec==QS), which(h==h_vec), ] <- parallel::parSapply(cl, 1:m, eocusum_arloc_sim,
                                                                        side = side, QS = QS, h = h,
                                                                        k = k, df = df1,

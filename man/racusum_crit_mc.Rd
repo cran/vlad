@@ -4,8 +4,17 @@
 \alias{racusum_crit_mc}
 \title{Compute alarm threshold of RA-CUSUM control chart using Markov chain approximation}
 \usage{
-racusum_crit_mc(pmix, L0, RA, RQ, scaling = 600, rounding = "p",
-  method = "Toep", jmax = 4, verbose = FALSE)
+racusum_crit_mc(
+  pmix,
+  L0,
+  RA,
+  RQ,
+  scaling = 600,
+  rounding = "p",
+  method = "Toep",
+  jmax = 4,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{pmix}{Numeric Matrix. A three column matrix. First column is the risk
@@ -28,8 +37,8 @@ out-of-control ARL.}
 larger values achieve higher accuracy but increase the computation burden (larger transition
 probability matrix).}
 
-\item{rounding}{Character. If \code{rounding = "p"} a paired rounding implementation similar to
-\emph{Webster and Pettitt (2007)} is used, if \code{rounding = "s"} a simple rounding method of
+\item{rounding}{Character. If \code{rounding = "p"} a paired rounding implementation of
+\emph{Knoth et al. (2019)} is used, if \code{rounding = "s"} a simple rounding method of
 \emph{Steiner et al. (2000)} is used.}
 
 \item{method}{Character. If \code{method = "Toep"} a combination of Sequential Probability Ratio
@@ -81,6 +90,10 @@ racusum_crit_mc(pmix = pmix, L0 = 740, RA = 0.5, RQ = 1)
 }
 }
 \references{
+Knoth S, Wittenberg P and Gan FF (2019).
+Risk-adjusted CUSUM charts under model error.
+\emph{Statistics in Medicine}, \strong{38}(12), pp. 2206--2218.
+
 Steiner SH, Cook RJ, Farewell VT and Treasure T (2000).
  Monitoring surgical performance using risk-adjusted cumulative sum charts.
  \emph{Biostatistics}, \strong{1}(4), pp. 441--452.

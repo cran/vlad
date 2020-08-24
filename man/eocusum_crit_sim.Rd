@@ -4,31 +4,46 @@
 \alias{eocusum_crit_sim}
 \title{Compute alarm threshold of EO-CUSUM control charts using simulation}
 \usage{
-eocusum_crit_sim(L0, k, df, coeff, m = 100, yemp = TRUE,
-  side = "low", nc = 1, jmax = 4, verbose = FALSE)
+eocusum_crit_sim(
+  L0,
+  pmix,
+  k,
+  RQ = 1,
+  side = "low",
+  yemp = FALSE,
+  m = 10000,
+  nc = 1,
+  hmax = 30,
+  jmax = 4,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{L0}{Double. Prespecified in-control Average Run Length.}
 
+\item{pmix}{Data Frame. A three column data frame. First column is the operation outcome.
+Second column are the predicted probabilities from the risk model. Third column can be either the
+ predicted probabilities from the risk model or average outcome.}
+
 \item{k}{Double. Reference value of the CUSUM control chart. Either \code{0} or a positive
 value. Can be determined with function \code{\link{optimal_k}}.}
 
-\item{df}{Data Frame. First column are Parsonnet Score values within a range of \code{0} to
-\code{100} representing the preoperative patient risk. The second column are binary (0/1)
-outcome values of each operation.}
-
-\item{coeff}{Numeric Vector. Estimated coefficients \eqn{\alpha}{alpha} and \eqn{\beta}{beta}
-from the binary logistic regression model. For more information see details.}
-
-\item{m}{Integer. Number of simulation runs.}
-
-\item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
-binary logistc regression model.}
+\item{RQ}{Double. Defines the true performance of a surgeon with the odds ratio ratio of death
+\code{RQ}. Use \code{RQ = 1} to compute the in-control ARL and other values to compute the
+out-of-control ARL.}
 
 \item{side}{Character. Default is \code{"low"} to calculate ARL for the upper arm of the V-mask.
 If side = \code{"up"}, calculate the lower arm of the V-mask.}
 
-\item{nc}{Integer. Number of cores.}
+\item{yemp}{Logical. If \code{TRUE} use observed outcome value, if \code{FALSE} use estimated
+binary logistc regression model.}
+
+\item{m}{Integer. Number of simulation runs.}
+
+\item{nc}{Integer. Number of cores used for parallel processing. Value is passed to
+\code{\link{parSapply}}.}
+
+\item{hmax}{Integer. Maximum value of \code{h} for the grid search.}
 
 \item{jmax}{Integer. Number of digits for grid search.}
 
@@ -36,43 +51,45 @@ If side = \code{"up"}, calculate the lower arm of the V-mask.}
 calculation of \code{h} is done.}
 }
 \value{
-Returns a single value which is the control limit \code{h} for a given ARL.
+Returns a single value which is the control limit \code{h} for a given in-control ARL.
 }
 \description{
 Compute alarm threshold of EO-CUSUM control charts using simulation.
 }
 \details{
-The function \code{eocusum_crit_sim} determines the control limit for given in-control
- ARL (\code{L0}) by applying a multi-stage search procedure which includes secant rule and the
-  parallel version of \code{\link{eocusum_arl_sim}} using \code{\link{mclapply}}.
+Determines the control limit ("\code{h}") for given in-control ARL (\code{"L0"})
+applying a grid search using \code{\link{eocusum_arl_sim}} and \code{\link{parSapply}}.
 }
 \examples{
 \dontrun{
+library(vlad)
+library(dplyr)
 data("cardiacsurgery", package = "spcadjust")
-library("dplyr")
 
-## preprocess data to 30 day mortality and subset phase I (In-control) of surgeons 2
-S2I <- cardiacsurgery \%>\% rename(s = Parsonnet) \%>\%
+## preprocess data to 30 day mortality
+SALL <- cardiacsurgery \%>\% rename(s = Parsonnet) \%>\%
   mutate(y = ifelse(status == 1 & time <= 30, 1, 0),
-         phase = factor(ifelse(date < 2*365, "I", "II"))) \%>\%
-  filter(phase == "I", surgeon == 2) \%>\% select(s, y)
+         phase = factor(ifelse(date < 2*365, "I", "II")))
+SI <- subset(SALL, phase == "I")
+y <- subset(SALL, select = y)
+GLM <- glm(y ~ s, data = SI, family = "binomial")
+pi1 <- predict(GLM, type = "response", newdata = data.frame(s = SALL$s))
+pmix <- data.frame(y, pi1, pi1)
 
-## estimate coefficients from logit model
-coeff1 <- coef(glm(y ~ s, data = S2I, family = "binomial"))
-## Number of simulation runs
-m <- 10^3
-set.seed(1234)
-## Number of cores
-nc <- parallel::detectCores()
+## (Deterioration)
+kopt <- optimal_k(pmix = pmix, RA = 2)
+h <- eocusum_crit_sim(L0=370, pmix=pmix, k=kopt, side = "low", verbose=TRUE, nc=4)
 
-## determine k for detecting deterioration
-kopt <- optimal_k(QA = 2, df = S2I, coeff = coeff, yemp = FALSE)
+## parameters to set up a tabular CUSUM or V-Mask (upper arm)
+d <- h/kopt
+theta <- atan(kopt)*180/pi
+cbind(kopt, h, theta, d)
 
-## compute threshold for prespecified in-control ARL
-h <- eocusum_crit_sim(L0 = 370, df = S2I, k = kopt, m = m, coeff = coeff1, side = "low",
-nc = nc)
+## (Improvement)
+kopt <- optimal_k(pmix = pmix, RA = 1/2)
+h <- eocusum_crit_sim(L0=370, pmix=pmix, k=kopt, side = "up", verbose=TRUE, nc=4)
 
-## parameters to set up a tabular CUSUM or V-Mask
+## parameters to set up a tabular CUSUM or V-Mask (lower arm)
 d <- h/kopt
 theta <- atan(kopt)*180/pi
 cbind(kopt, h, theta, d)
